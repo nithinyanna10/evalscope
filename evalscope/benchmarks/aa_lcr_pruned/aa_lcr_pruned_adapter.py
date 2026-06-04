@@ -78,3 +78,4 @@ class AaLcrPrunedAdapter(PrunedAdapterBase, AALCRAdapter):
     """
 
     _reviews_benchmark_prefix: str = 'aa_lcr'
+    _noise_aware: bool = True  # LLM-judged: unanimous samples may reflect judge noise

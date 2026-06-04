@@ -46,6 +46,7 @@ class PrunedAdapterBase:
     """
 
     _reviews_benchmark_prefix: str = ''
+    _noise_aware: bool = False  # set True in LLM-judged adapters (e.g. aa_lcr_pruned)
 
     # ------------------------------------------------------------------
     # These read from self.extra_params which is available after the
@@ -83,7 +84,11 @@ class PrunedAdapterBase:
             return {key: set(range(len(datasets[key]))) for key in subset_keys}
 
         prefix = self._reviews_benchmark_prefix or self.name  # type: ignore[attr-defined]
-        pruner = StratifiedPruner(reviews_dir=self._reviews_dir, benchmark_prefix=prefix)
+        pruner = StratifiedPruner(
+            reviews_dir=self._reviews_dir,
+            benchmark_prefix=prefix,
+            noise_aware=self._noise_aware,
+        )
         selected = set(pruner.prune(prune_ratio=self._prune_ratio))
         return {key: selected for key in subset_keys}
 

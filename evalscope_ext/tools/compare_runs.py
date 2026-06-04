@@ -34,6 +34,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from evalscope_ext.utils import spearman_rank_correlation
+
 PASS_DELTA_THRESHOLD = 0.05
 PASS_CORR_THRESHOLD = 0.90
 
@@ -86,25 +88,6 @@ def _collect_scores(root: str) -> Dict[str, Dict[str, float]]:
 # ---------------------------------------------------------------------------
 # Spearman rank correlation (no scipy dependency)
 # ---------------------------------------------------------------------------
-
-def _spearman(xs: List[float], ys: List[float]) -> float:
-    """Compute Spearman ρ between two equal-length sequences."""
-    n = len(xs)
-    if n < 2:
-        return float('nan')
-
-    def _ranks(seq: List[float]) -> List[float]:
-        sorted_idx = sorted(range(n), key=lambda i: seq[i])
-        rank = [0.0] * n
-        for r, i in enumerate(sorted_idx, start=1):
-            rank[i] = float(r)
-        return rank
-
-    rx = _ranks(xs)
-    ry = _ranks(ys)
-    d2 = sum((rx[i] - ry[i]) ** 2 for i in range(n))
-    return 1.0 - 6.0 * d2 / (n * (n * n - 1))
-
 
 # ---------------------------------------------------------------------------
 # Core comparison
@@ -160,7 +143,7 @@ def compare(full_dir: str, pruned_dir: str) -> List[dict]:
         if len(shared_models) >= 2:
             f_vals = [f_model_scores[m] for m in shared_models]
             p_vals = [p_model_scores[m] for m in shared_models]
-            rank_corr = _spearman(f_vals, p_vals)
+            rank_corr = spearman_rank_correlation(f_vals, p_vals)
         else:
             rank_corr = float('nan')
 

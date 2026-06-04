@@ -28,6 +28,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from evalscope_ext.pruning.stratified_pruner import StratifiedPruner  # no evalscope deps
+from evalscope_ext.utils import spearman_rank_correlation
 
 # ---------------------------------------------------------------------------
 # Per-benchmark configuration
@@ -88,23 +89,6 @@ def _load_benchmark_scores(reviews_dir: str, prefix: str):
     return model_scores, sorted(all_indices)
 
 
-def _spearman(xs, ys):
-    """Spearman ρ between two sequences (no scipy required)."""
-    n = len(xs)
-    if n < 2:
-        return float('nan')
-
-    def _ranks(seq):
-        sorted_idx = sorted(range(n), key=lambda i: seq[i])
-        rank = [0.0] * n
-        for r, i in enumerate(sorted_idx, start=1):
-            rank[i] = float(r)
-        return rank
-
-    rx = _ranks(xs)
-    ry = _ranks(ys)
-    d2 = sum((rx[i] - ry[i]) ** 2 for i in range(n))
-    return 1.0 - 6.0 * d2 / (n * (n * n - 1))
 
 
 def _min_adjacent_gap(score_dict):
@@ -167,7 +151,7 @@ def validate_benchmark(reviews_dir: str, prefix: str, prune_ratio: float) -> dic
     if len(models) >= 2:
         f_vals = [full_by_model[m] for m in models]
         p_vals = [pruned_by_model[m] for m in models]
-        rho = _spearman(f_vals, p_vals)
+        rho = spearman_rank_correlation(f_vals, p_vals)
         print(f'\nSpearman rank correlation (full vs pruned): {rho:.4f}')
     else:
         rho = float('nan')
