@@ -387,3 +387,105 @@ If you use EvalScope in your research, please cite our work:
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=modelscope/evalscope&type=Date)](https://star-history.com/#modelscope/evalscope&Date)
+
+---
+
+## Task 2 — Benchmark Pruning (Cerebras Challenge)
+
+**evalscope commit SHA developed against:** `a7a412cec31205a84e8d6b383e27ee9e650e1920`
+
+### Overview
+
+This adds a model-agnostic benchmark pruning system (`evalscope_ext/`) that compresses evaluation benchmarks to ~10 % of their original size while preserving Spearman rank correlation (ρ > 0.9) between full and pruned model rankings.
+
+**Algorithm — difficulty-quantile median sampling:**
+1. Load precomputed per-model review JSONL files for the benchmark
+2. Compute per-sample `mean_score` (avg accuracy across models) and `discrimination` (std)
+3. Sort all samples by difficulty (mean_score), divide into k equal quantile groups
+4. Select the median sample from each group (ensures representative difficulty coverage)
+5. Result: a pruned subset that mirrors the full difficulty distribution with minimal bias
+
+### Setup
+
+```bash
+pip install -e ".[all]"   # installs evalscope + evalscope_ext
+```
+
+### Run full eval
+
+```bash
+evalscope eval --model <model> \
+  --datasets live_code_bench \
+  --dataset-args '{"live_code_bench": {"subset_list": ["v5"]}}' \
+  --output ./results_full/
+```
+
+### Run pruned eval
+
+```bash
+evalscope eval --model <model> \
+  --datasets live_code_bench_pruned \
+  --dataset-args '{
+    "live_code_bench_pruned": {
+      "pruning_strategy": "stratified",
+      "prune_ratio": 0.1,
+      "reviews_dir": "./Evals/Part 1/reviews/"
+    }
+  }' \
+  --output ./results_pruned/
+```
+
+### Compare runs
+
+```bash
+python -m evalscope_ext.tools.compare_runs \
+  --full ./results_full/ \
+  --pruned ./results_pruned/
+```
+
+### Validate without live inference
+
+```bash
+python scripts/validate_pruner.py \
+  --reviews-dir "/path/to/Evals/Part 1/reviews/" \
+  --prune-ratio 0.1
+```
+
+Sample output (LCB v5, 315 → 32 samples):
+```
+Benchmark prefix : live_code_bench_v5
+Prune ratio      : 0.1 (keep 10%)
+Total samples    : 315 → 32 selected
+gpt-oss-120b     full=0.7651  pruned=0.7500  Δ=0.0151
+kimi-k2.5        full=0.6286  pruned=0.6562  Δ=0.0277
+minimax-m2.5     full=0.6190  pruned=0.5938  Δ=0.0253
+Spearman ρ : 1.0000  ✓    max |delta| : 0.0277  ✓
+Result     : PASS
+```
+
+### New benchmarks
+
+| Name | Description |
+|------|-------------|
+| `live_code_bench_pruned` | LCB v5, pruned by stratified quantile sampling |
+| `aa_lcr_pruned` | AA-LCR, pruned by stratified quantile sampling |
+| `mmmu_pruned` | MMMU, pruned by image-encoder complexity probe |
+
+### File structure
+
+```
+evalscope_ext/
+  pruning/
+    stratified_pruner.py     # core difficulty-quantile algorithm
+    pruned_adapter_base.py   # universal mixin (works with any benchmark)
+    mmmu_probe.py            # MMMU image-encoder complexity probe
+  tools/
+    compare_runs.py          # CLI: compare full vs pruned eval directories
+
+evalscope/benchmarks/
+  live_code_bench_pruned/    # LCB pruned adapter
+  aa_lcr_pruned/             # AA-LCR pruned adapter
+  mmmu_pruned/               # MMMU image-encoder probe adapter
+
+scripts/validate_pruner.py   # offline validation (no live inference needed)
+```

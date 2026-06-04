@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "pretty_name": "AA-LCR (Pruned)",
+    "dataset_id": "evalscope/AA-LCR",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "Reasoning",
+      "LongContext"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "Pruned variant of AA-LCR using stratified sample selection.",
+    "prompt_template": "\nBEGIN INPUT DOCUMENTS\n\n{documents_text}\n\nEND INPUT DOCUMENTS\n\nAnswer the following question using the input documents provided above.\n\nSTART QUESTION\n\n{question}\n\nEND QUESTION\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "text_dir": {
+        "type": "str | null",
+        "description": "Local directory containing extracted AA-LCR text files; if null will auto-download & extract.",
+        "value": null
+      },
+      "pruning_strategy": {
+        "type": "str",
+        "description": "Pruning strategy.",
+        "value": "stratified"
+      },
+      "prune_ratio": {
+        "type": "float",
+        "description": "Fraction to keep.",
+        "value": 0.1
+      },
+      "reviews_dir": {
+        "type": "str",
+        "description": "Reviews directory.",
+        "value": ""
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  }
+}
